@@ -1,0 +1,945 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Widget Cards Grid with Overview + Tabs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700 antialiased">
+  <main class="max-w-7xl mx-auto px-4 py-10">
+    <div class="max-w-7xl mx-auto px-4 -mt-4 mb-4 flex justify-end">
+      <button id="openNewCodeModal"
+              class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700">
+        Add New Code
+      </button>
+    </div>
+
+    <section id="cardsGrid" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <!-- Cards injected by JS from /components/api/components/ -->
+    </section>
+  </main>
+
+  <!-- EXPANDED CARD (modal) -->
+  <div id="cardModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" data-close-modal></div>
+
+    <div class="relative mx-auto mt-10 w-[min(92vw,1100px)]">
+      <div id="cardDialog"
+           class="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden ring-1 ring-black/5
+                  transition ease-out duration-200 translate-y-2 opacity-0">
+
+        <!-- header -->
+        <div class="px-6 py-4 flex items-center gap-3 border-b border-slate-200">
+          <div class="h-10 w-10 rounded-xl bg-indigo-600 text-white grid place-items-center font-bold shadow">PR</div>
+          <div class="min-w-0">
+            <h3 id="modalTitle" class="text-lg font-semibold text-slate-900 truncate">Title</h3>
+            <p id="modalDate" class="text-xs text-slate-500">Added on: —</p>
+            <!-- Status Pill Added Here -->
+            <div id="modalStatusPill" class="mt-1.5">
+              <!-- Status pill injected by JS -->
+            </div>
+          </div>
+
+          <!-- Delete card button -->
+          <button id="deleteCardBtn"
+                  class="ml-auto px-3 py-1.5 rounded-lg border border-rose-200 text-rose-700 text-xs hover:bg-rose-50">
+            Delete Card
+          </button>
+
+          <button class="ml-2 p-2 rounded-lg text-slate-500 hover:bg-slate-100" data-close-modal aria-label="Close">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- TABS -->
+        <div class="px-4 pt-3">
+          <div class="flex flex-wrap gap-2">
+            <button class="tab-btn px-3 py-1.5 rounded-lg text-sm text-slate-600 hover:bg-slate-100 data-[active=true]:bg-slate-900 data-[active=true]:text-white" data-tab="overview" data-active="true">Overview</button>
+            <button class="tab-btn px-3 py-1.5 rounded-lg text-sm text-slate-600 hover:bg-slate-100" data-tab="preview">Preview</button>
+            <button class="tab-btn px-3 py-1.5 rounded-lg text-sm text-slate-600 hover:bg-slate-100" data-tab="code">Code</button>
+            <button class="tab-btn px-3 py-1.5 rounded-lg text-sm text-slate-600 hover:bg-slate-100" data-tab="instructions">Instructions</button>
+            <button class="tab-btn px-3 py-1.5 rounded-lg text-sm text-slate-600 hover:bg-slate-100" data-tab="notes">Notes</button>
+            <button class="tab-btn px-3 py-1.5 rounded-lg text-sm text-slate-600 hover:bg-slate-100" data-tab="files">Files</button>
+          </div>
+        </div>
+
+        <!-- PANELS -->
+        <div class="px-6 py-5 space-y-6">
+          <!-- OVERVIEW -->
+          <section class="tab-panel" data-panel="overview">
+            <div class="rounded-xl border border-slate-200 p-4">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="text-sm font-semibold text-slate-800">Card Details</h4>
+                <div class="flex items-center gap-2">
+                  <button id="ovEditBtn" class="px-2.5 py-1.5 rounded-md border border-slate-300 text-xs hover:bg-slate-100">Edit</button>
+                  <button id="ovSaveBtn" class="px-2.5 py-1.5 rounded-md bg-emerald-600 text-white text-xs hover:bg-emerald-700 hidden">Save</button>
+                  <button id="ovCancelBtn" class="px-2.5 py-1.5 rounded-md border border-slate-300 text-xs hover:bg-slate-50 hidden">Cancel</button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-slate-600 mb-1">Name</label>
+                  <input id="ovName" type="text" class="w-full rounded-lg border-slate-200 text-sm disabled:bg-slate-50" disabled>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-600 mb-1">Date Added</label>
+                  <input id="ovDate" type="date" class="w-full rounded-lg border-slate-200 text-sm disabled:bg-slate-50" disabled>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-600 mb-1">Section</label>
+                  <input id="ovSection" type="text" class="w-full rounded-lg border-slate-200 text-sm disabled:bg-slate-50" placeholder="e.g., UI Components" disabled>
+                </div>
+                <!-- Status Selector Added Here -->
+                <div>
+                  <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
+                  <select id="ovStatus" class="w-full rounded-lg border-slate-200 text-sm disabled:bg-slate-50" disabled>
+                    <option value="not_started">Not Started</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-medium text-slate-600 mb-1">Tags</label>
+                  <div id="ovTagsWrap" class="flex flex-wrap gap-2 mb-2"></div>
+                  <input id="ovTagInput" type="text" class="w-full rounded-lg border-slate-200 text-sm disabled:bg-slate-50" placeholder="Type a tag and press Enter" disabled>
+                  <p class="text-[11px] text-slate-500 mt-1">Press Enter to add. Click × to remove.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Preview -->
+          <section class="tab-panel hidden" data-panel="preview">
+            <!-- button row (right-aligned, above panel) -->
+            <div class="flex items-center justify-end mb-2">
+              <button id="previewExpandBtn"
+                      class="px-2.5 py-1.5 rounded-md text-xs bg-slate-900 text-white hover:bg-slate-800"
+                      title="Expand preview">
+                Expand
+              </button>
+            </div>
+
+            <!-- preview panel -->
+            <div class="rounded-xl border border-slate-200 bg-white">
+              <div class="preview-frame-wrap rounded-xl overflow-hidden h-72">
+                <!-- iframe injected by JS -->
+              </div>
+            </div>
+          </section>
+
+          <!-- Code -->
+          <section class="tab-panel hidden" data-panel="code">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-sm font-semibold text-slate-800">Code</h4>
+                <button id="copyCode" class="text-xs px-2 py-1 rounded-md border border-slate-300 hover:bg-slate-100">Copy</button>
+              </div>
+              <div class="max-h-[60vh] overflow-auto hide-scrollbar">
+                <pre id="codeBlock" class="text-xs leading-6 font-mono whitespace-pre overflow-auto px-4 py-3 min-h-[140px]">
+<code><!-- code injected by JS --></code>
+                </pre>
+              </div>
+            </div>
+          </section>
+
+          <!-- Instructions -->
+          <section class="tab-panel hidden" data-panel="instructions">
+            <ol class="list-decimal pl-5 space-y-2 text-sm" id="ovInstructions">
+              <!-- filled from DB -->
+            </ol>
+          </section>
+
+          <!-- Notes -->
+          <section class="tab-panel hidden" data-panel="notes">
+            <div class="rounded-xl border border-slate-200 p-4">
+              <textarea id="ovNotes" class="w-full h-40 text-sm rounded-lg border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Write notes..." disabled></textarea>
+            </div>
+          </section>
+
+          <!-- Files -->
+          <section class="tab-panel hidden" data-panel="files">
+            <div class="flex items-center justify-between gap-3 mb-3">
+              <div class="flex items-center gap-2">
+                <button id="filesTableBtn" class="text-xs px-2.5 py-1.5 rounded-md border border-slate-300 hover:bg-slate-100 data-[active=true]:bg-slate-900 data-[active=true]:text-white" data-active="true">Table View</button>
+                <button id="filesIconBtn"  class="text-xs px-2.5 py-1.5 rounded-md border border-slate-300 hover:bg-slate-100">Icon View</button>
+              </div>
+              <div>
+                <input id="fileInput" type="file" class="hidden" multiple />
+                <button id="uploadBtn" class="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Upload files</button>
+              </div>
+            </div>
+
+            <div id="filesTableWrap" class="rounded-xl border border-slate-200 overflow-hidden">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-600">
+                  <tr>
+                    <th class="text-left font-medium px-4 py-2">Name</th>
+                    <th class="text-left font-medium px-4 py-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="filesTableBody"></tbody>
+              </table>
+            </div>
+
+            <div id="filesIconWrap" class="hidden grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-4"></div>
+          </section>
+        </div>
+
+        <!-- footer -->
+        <div class="px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
+          <button class="px-3 py-1.5 rounded-lg border border-slate-300 text-sm hover:bg-slate-50" data-close-modal>Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD NEW CODE MODAL -->
+  <div id="newCodeModal" class="fixed inset-0 z-[70] hidden">
+    <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" data-close></div>
+
+    <form id="newCodeForm"
+          class="relative mx-auto mt-10 w-[min(92vw,860px)] max-h-[85vh] flex flex-col bg-white rounded-2xl shadow-2xl border border-slate-200 ring-1 ring-black/5">
+      <!-- header -->
+      <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+        <h3 class="text-base font-semibold text-slate-900">Add New Code</h3>
+        <button type="button" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100" data-close aria-label="Close">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- body (scrollable) -->
+      <div class="overflow-y-auto px-6 py-6 space-y-6 flex-1 hide-scrollbar">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Name <span class="text-rose-600">*</span></label>
+            <input id="ncName" type="text" required placeholder="Component name"
+                   class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Category / Section</label>
+            <input id="ncCategory" type="text" placeholder="e.g., UI Components"
+                   class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Tags</label>
+            <input id="ncTags" type="text" placeholder="widget, responsive, table"
+                   class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500">
+            <p class="text-[11px] text-slate-500 mt-1">Comma-separated.</p>
+          </div>
+          <!-- Status Selector Added Here -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+            <select id="ncStatus" class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500">
+              <option value="not_started" selected>Not Started</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200">
+          <div class="px-4 py-3 border-b border-slate-200 flex items-center gap-3">
+            <span class="text-sm font-medium text-slate-800">Code <span class="text-rose-600">*</span></span>
+            <div class="ml-auto flex items-center gap-6 text-sm">
+              <label class="inline-flex items-center gap-2">
+                <input type="radio" name="codeMode" value="paste" checked class="size-4 accent-indigo-600">
+                <span>Paste</span>
+              </label>
+              <label class="inline-flex items-center gap-2">
+                <input type="radio" name="codeMode" value="upload" class="size-4 accent-indigo-600">
+                <span>Upload</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Paste panel -->
+          <div id="pastePanel" class="p-4">
+            <textarea id="ncCode" name="code_text" rows="8" required
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-mono leading-6 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500"
+                      placeholder="Paste HTML/CSS/JS. This renders in the card preview."></textarea>
+          </div>
+
+          <!-- Upload panel -->
+          <div id="uploadPanel" class="p-4 hidden space-y-2">
+            <input id="ncCodeFile" name="code_file" type="file"
+                   class="block w-full text-sm file:mr-3 file:px-3 file:py-1.5 file:rounded-md file:border-0 file:bg-slate-900 file:text-white hover:file:bg-slate-800" />
+            <p class="text-[11px] text-slate-500">Upload a file containing your code (HTML/CSS/JS).</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+            <textarea id="ncDescription" rows="4" placeholder="Short description"
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+            <textarea id="ncNotes" rows="4" placeholder="Internal notes / caveats"
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500"></textarea>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Instructions</label>
+          <textarea id="ncInstructions" rows="4" placeholder="Setup steps, dependencies, usage"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Upload Additional Files (optional)</label>
+          <input id="ncFiles" type="file" multiple
+                 class="block w-full text-sm file:mr-3 file:px-3 file:py-1.5 file:rounded-md file:border-0 file:bg-slate-900 file:text-white hover:file:bg-slate-800" />
+        </div>
+      </div>
+
+      <!-- footer -->
+      <div class="px-6 py-5 border-t border-slate-200 flex items-center justify-end gap-2">
+        <button type="button" class="px-3 py-1.5 rounded-lg border border-slate-300 text-sm hover:bg-slate-50" data-close>Cancel</button>
+        <button type="submit" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700">Add Card</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- REUSABLE CONFIRMATION MODAL -->
+  <div id="confirmModal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" data-confirm-cancel></div>
+    <div class="relative mx-auto mt-24 w-[min(92vw,520px)]">
+      <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden ring-1 ring-black/5">
+        <div class="px-5 py-4 border-b border-slate-200">
+          <h3 id="confirmTitle" class="text-base font-semibold text-slate-900">Confirm</h3>
+        </div>
+        <div class="px-5 py-4">
+          <p id="confirmMessage" class="text-sm text-slate-600">Are you sure?</p>
+        </div>
+        <div class="px-5 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
+          <button class="px-3 py-1.5 rounded-lg border border-slate-300 text-sm hover:bg-slate-50" data-confirm-cancel>Cancel</button>
+          <button id="confirmOk" class="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-sm hover:bg-rose-700">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULLSCREEN PREVIEW OVERLAY -->
+  <div id="previewFullscreen"
+      class="fixed inset-0 z-[80] hidden">
+    <!-- backdrop -->
+    <div class="absolute inset-0 bg-slate-900/80" data-close-preview></div>
+
+    <!-- content -->
+    <div class="relative mx-auto my-6 w-[min(96vw,1400px)] h-[88vh]">
+      <div class="absolute -top-12 right-0 flex items-center gap-2">
+        <button class="px-3 py-1.5 rounded-md text-xs bg-white/10 text-white hover:bg-white/20"
+                data-close-preview>Close</button>
+      </div>
+
+      <div class="h-full w-full rounded-2xl overflow-hidden ring-1 ring-black/20 bg-white">
+        <iframe id="previewFullscreenFrame"
+                class="w-full h-full"
+                sandbox="allow-scripts allow-forms allow-pointer-lock allow-same-origin"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS -->
+  <script>
+    // ======= CSRF =======
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    const CSRF = () => getCookie('csrftoken');
+
+    // ===== Shortcuts =====
+    const $ = (s, r=document) => r.querySelector(s);
+    const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+
+    // ===== Stores =====
+    const cardCodeStore = new Map(); // cardId -> raw code
+
+    // ===== Status Helpers =====
+    const statusMap = {
+      'completed': { text: 'Completed', classes: 'bg-emerald-100 text-emerald-700' },
+      'in_progress': { text: 'In Progress', classes: 'bg-yellow-100 text-yellow-800' },
+      'not_started': { text: 'Not Started', classes: 'bg-rose-100 text-rose-700' }
+    };
+    const defaultStatusKey = 'not_started';
+    const defaultStatusInfo = statusMap[defaultStatusKey];
+
+    function getStatusInfo(statusKey) {
+      return statusMap[statusKey] || defaultStatusInfo;
+    }
+
+    function getStatusPillHtml(statusKey) {
+      const status = getStatusInfo(statusKey);
+      return `<span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${status.classes}">${status.text}</span>`;
+    }
+
+
+    // ===== Card modal pieces =====
+    const modal  = $('#cardModal');
+    const dialog = $('#cardDialog');
+    const titleEl = $('#modalTitle');
+    const dateEl  = $('#modalDate');
+    const modalStatusPill = $('#modalStatusPill'); // New
+
+    // Updated state
+    const cardState = { id:null, name:'', date:'', section:'', tags:[], notes:'', instructions:'', status:'' };
+
+    function renderTagChips(container, tags, removable = false) {
+      container.innerHTML = '';
+      tags.forEach((t, i) => {
+        const chip = document.createElement('span');
+        chip.className = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-xs';
+        chip.innerHTML = `
+          <span class="truncate max-w-[10rem]">${t}</span>
+          ${removable ? `<button type="button" data-tag-index="${i}" class="ml-1 text-slate-500 hover:text-rose-600">&times;</button>` : ''}
+        `;
+        container.appendChild(chip);
+      });
+
+      if (removable) {
+        container.querySelectorAll('[data-tag-index]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const i = Number(btn.dataset.tagIndex);
+            cardState.tags.splice(i, 1);
+            renderTagChips(container, cardState.tags, true);
+          });
+        });
+      }
+    }
+
+    // Open/close expanded card modal
+    const closeModal = () => {
+      dialog.classList.add('translate-y-2','opacity-0');
+      setTimeout(()=>{ modal.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); },160);
+    };
+    modal.addEventListener('click', (e)=>{ if(e.target.closest('[data-close-modal]')) closeModal(); });
+    document.addEventListener('keydown', (e)=>{ if(!modal.classList.contains('hidden') && e.key==='Escape') closeModal(); });
+
+    // Tabs
+    const setActiveTab = (name) => {
+      $$('.tab-btn', dialog).forEach(btn=>{
+        const active = btn.dataset.tab===name;
+        btn.dataset.active = active?'true':'false';
+        btn.classList.toggle('bg-slate-900', active);
+        btn.classList.toggle('text-white', active);
+      });
+      $$('.tab-panel', dialog).forEach(p=> p.classList.toggle('hidden', p.dataset.panel!==name));
+      try { localStorage.setItem('expandedCardActiveTab', name); } catch {}
+      if(name==='preview' || name==='code'){ renderModalPreviewAndCode(cardState.id); }
+    };
+    $$('.tab-btn', dialog).forEach(btn => btn.addEventListener('click', (e)=>{ e.preventDefault(); setActiveTab(btn.dataset.tab); }));
+    (function(){ let s=null; try{ s=localStorage.getItem('expandedCardActiveTab'); }catch{}; setActiveTab(s && $('[data-tab="'+s+'"]',dialog)?s:'overview'); })();
+
+    // Copy code
+    $('#copyCode').addEventListener('click', async ()=>{
+      const txt = $('#codeBlock').innerText;
+      try{ await navigator.clipboard.writeText(txt); const b=$('#copyCode'); const p=b.textContent; b.textContent='Copied!'; setTimeout(()=>b.textContent=p,900);}catch{}
+    });
+
+    // Confirmation modal (delete)
+    const confirmModal = $('#confirmModal');
+    const confirmTitle = $('#confirmTitle');
+    const confirmMessage = $('#confirmMessage');
+    const confirmOk = $('#confirmOk');
+    function openConfirm({ title='Confirm', message='Are you sure?', confirmText='Confirm', danger=true }){
+      confirmTitle.textContent = title; confirmMessage.textContent = message; confirmOk.textContent = confirmText;
+      confirmOk.classList.toggle('bg-rose-600', danger); confirmOk.classList.toggle('hover:bg-rose-700', danger);
+      confirmOk.classList.toggle('bg-emerald-600', !danger); confirmOk.classList.toggle('hover:bg-emerald-700', !danger);
+      confirmModal.classList.remove('hidden');
+      return new Promise(resolve=>{
+        const onOk=()=>{cleanup(); resolve(true);}, onCancel=()=>{cleanup(); resolve(false);};
+        function cleanup(){ confirmOk.removeEventListener('click', onOk); $$('[data-confirm-cancel]',confirmModal).forEach(el=>el.removeEventListener('click', onCancel)); confirmModal.classList.add('hidden'); }
+        confirmOk.addEventListener('click', onOk);
+        $$('[data-confirm-cancel]',confirmModal).forEach(el=>el.addEventListener('click', onCancel));
+      });
+    }
+
+    // Delete entire card (backend + DOM)
+    $('#deleteCardBtn').addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      const cardId = dialog.dataset.cardId;
+      const ok = await openConfirm({ title:'Delete Card', message:'This will permanently delete this card and its data. Continue?', confirmText:'Delete', danger:true });
+      if(!ok) return;
+
+      const res = await fetch(`/html-templates/api/html-templates/${cardId}/`, {
+        method: 'DELETE',
+        headers: {'X-CSRFToken': CSRF()}
+      });
+      if(!res.ok){ alert('Delete failed'); return; }
+
+      const el = document.querySelector(`#card-${cardId}`);
+      if(el) el.remove();
+      closeModal();
+    });
+
+    // Overview edit/save
+    const ovName=$('#ovName'), ovDate=$('#ovDate'), ovSection=$('#ovSection'), ovStatus=$('#ovStatus'), ovTagsWrap=$('#ovTagsWrap'), ovTagInput=$('#ovTagInput');
+    const ovEditBtn=$('#ovEditBtn'), ovSaveBtn=$('#ovSaveBtn'), ovCancelBtn=$('#ovCancelBtn');
+    const ovNotes=$('#ovNotes'), ovInstructions=$('#ovInstructions');
+
+    function setOverviewEditMode(on){
+      // Updated list to include ovStatus
+      [ovName,ovDate,ovSection,ovStatus,ovTagInput, ovNotes].forEach(el=>el.disabled=!on);
+      ovEditBtn.classList.toggle('hidden', on);
+      ovSaveBtn.classList.toggle('hidden', !on);
+      ovCancelBtn.classList.toggle('hidden', !on);
+      ovTagInput.placeholder = on ? 'Type a tag and press Enter' : '';
+    }
+    ovEditBtn.addEventListener('click', ()=>setOverviewEditMode(true));
+    ovCancelBtn.addEventListener('click', ()=>{
+      ovName.value=cardState.name;
+      ovDate.value=cardState.date||'';
+      ovSection.value=cardState.section||'';
+      ovStatus.value=cardState.status||defaultStatusKey; // Reset status
+      ovNotes.value=cardState.notes||'';
+      renderTagChips(ovTagsWrap, cardState.tags, true);
+      ovTagInput.value='';
+      setOverviewEditMode(false);
+    });
+    ovSaveBtn.addEventListener('click', async ()=>{
+      // If user typed a new tag into the input, add it
+      const t=ovTagInput.value.trim();
+      if(t && !cardState.tags.includes(t)){ cardState.tags.push(t); ovTagInput.value=''; }
+
+      // Prepare payload - added status
+      const payload = {
+        name: ovName.value.trim() || 'Untitled',
+        dateISO: ovDate.value || null,
+        section: ovSection.value.trim(),
+        tags: cardState.tags,
+        notes: ovNotes.value,
+        status: ovStatus.value, // Add status to payload
+      };
+
+      const res = await fetch(`/html-templates/api/html-templates/${cardState.id}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF() },
+        body: JSON.stringify(payload)
+      });
+      if(!res.ok){ alert('Save failed'); return; }
+      const saved = await res.json();
+
+      // Update local state + DOM
+      cardState.name = saved.name;
+      cardState.date = saved.dateISO;
+      cardState.section = saved.section;
+      cardState.status = saved.status; // Save new status
+      cardState.tags = saved.tags || [];
+      applyCardStateToDOM();
+      renderTagChips(ovTagsWrap, cardState.tags, true);
+      setOverviewEditMode(false);
+    });
+
+    ovTagInput.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        const t=ovTagInput.value.trim();
+        if(t && !cardState.tags.includes(t)){
+          cardState.tags.push(t);
+          ovTagInput.value='';
+          renderTagChips(ovTagsWrap, cardState.tags, true);
+        }
+      }
+    });
+
+    // This function now updates the grid card's status pill too
+    function applyCardStateToDOM(){
+      titleEl.textContent=cardState.name;
+      dateEl.textContent=`Added on: ${prettyDate(cardState.date)}`;
+      modalStatusPill.innerHTML = getStatusPillHtml(cardState.status); // Update modal header pill
+
+      if(cardState.id){
+        const card=document.querySelector(`#card-${cardState.id}`);
+        if(card){
+          card.dataset.title=cardState.name;
+          card.dataset.date=cardState.date||'';
+          card.dataset.section=cardState.section||'';
+          card.dataset.tags=cardState.tags.join(',');
+          card.dataset.status=cardState.status||defaultStatusKey; // Update card data-status
+
+          const ct=card.querySelector('[data-card-title]');
+          if(ct) ct.textContent=cardState.name;
+          const cd=card.querySelector('[data-card-date]');
+          if(cd) cd.textContent=`Added on: ${prettyDate(cardState.date)}`;
+          
+          // Update card status pill
+          const cs=card.querySelector('[data-card-status]');
+          if(cs) cs.innerHTML = getStatusPillHtml(cardState.status);
+
+          const tagWrap=card.querySelector('[data-card-tags]');
+          if(tagWrap) renderTagChips(tagWrap, cardState.tags, false);
+        }
+      }
+    }
+
+    function prettyDate(iso) {
+      if (!iso) return '—';
+
+      // If it's a pure date (YYYY-MM-DD), format it manually to avoid timezone shifts
+      if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+        const [y, m, d] = iso.split('-');
+        const months = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        const mi = parseInt(m, 10) - 1;
+        const di = parseInt(d, 10);
+
+        if (mi >= 0 && mi < 12 && !isNaN(di)) {
+          return `${months[mi]} ${di}, ${y}`;
+        }
+      }
+
+      // Fallback for anything else (datetime strings, etc.)
+      const d = new Date(iso);
+      if (isNaN(d)) return iso;
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    // ===== Add New Code modal open/close =====
+    const newCodeModal = $('#newCodeModal');
+    $('#openNewCodeModal').addEventListener('click', ()=>{ newCodeModal.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); });
+    newCodeModal.addEventListener('click', (e)=>{ if(e.target.closest('[data-close]')){ newCodeModal.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); } });
+
+    // Toggle paste/upload
+    const pastePanel=$('#pastePanel'), uploadPanel=$('#uploadPanel');
+    const ncCode = $('#ncCode'), ncCodeFile = $('#ncCodeFile'), ncFiles = $('#ncFiles');
+    function setCodeMode(mode){
+      const paste = mode==='paste';
+      pastePanel.classList.toggle('hidden', !paste);
+      uploadPanel.classList.toggle('hidden', paste);
+      ncCode.required=paste; ncCode.disabled=!paste;
+      ncCodeFile.required=!paste; ncCodeFile.disabled=paste;
+    }
+    document.querySelectorAll('input[name="codeMode"]').forEach(r=>r.addEventListener('change',()=>setCodeMode(r.value)));
+    setCodeMode(document.querySelector('input[name="codeMode"]:checked').value);
+
+    // Build preview (iframe so code is sandboxed)
+    function buildPreviewNode(code){
+      const wrap=document.createElement('div'); wrap.className='relative rounded-xl h-48 bg-slate-100 border border-slate-200 overflow-hidden';
+      const iframe=document.createElement('iframe'); iframe.className='w-full h-full pointer-events-none';
+      iframe.setAttribute('sandbox','allow-scripts allow-forms allow-pointer-lock allow-same-origin');
+      iframe.srcdoc = code || '<!doctype html><html><body style="display:grid;place-items:center;height:100%;font:12px system-ui;color:#94a3b8">No code</body></html>';
+      wrap.appendChild(iframe); return wrap;
+    }
+
+    // Create full card element - UPDATED
+    function buildCardEl({id, name, dateISO, section, tags, code, status}) {
+      const article = document.createElement('article');
+      article.id = `card-${id}`;
+      article.className = 'group bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition cursor-pointer';
+      article.setAttribute('data-open-card', '');
+      article.dataset.cardId = String(id);
+      article.dataset.title = name;
+      article.dataset.date = dateISO;
+      article.dataset.section = section || '';
+      article.dataset.tags = (tags || []).join(',');
+      article.dataset.status = status || defaultStatusKey;
+
+      const content = document.createElement('div');
+      content.className = 'px-4 pt-5 pb-4';
+      content.appendChild(buildPreviewNode(code));
+      article.appendChild(content);
+
+      const meta = document.createElement('div');
+      meta.className = 'px-5 pt-1 pb-2';
+      meta.innerHTML = `
+        <h2 class="text-base font-semibold text-slate-800" data-card-title>${name}</h2>
+        <p class="text-xs text-slate-500 mt-0.5" data-card-date>
+          Added on: ${prettyDate(dateISO)}
+        </p>
+        <div class="mt-2" data-card-status>
+          ${getStatusPillHtml(status || defaultStatusKey)}
+        </div>
+      `;
+      article.appendChild(meta);
+
+      const tagsWrap = document.createElement('div');
+      tagsWrap.className = 'px-4 pb-3 flex flex-wrap gap-2';
+      tagsWrap.setAttribute('data-card-tags', '');
+      (tags || []).forEach(t => {
+        const s = document.createElement('span');
+        s.className = 'px-2.5 py-1 rounded-full bg-slate-100 text-xs';
+        s.textContent = t;
+        tagsWrap.appendChild(s);
+      });
+      article.appendChild(tagsWrap);
+
+      cardCodeStore.set(String(id), code || '');
+      return article;
+    }
+
+
+    // Modal Preview & Code renderers
+    function renderModalCodeTab(cardId){ const code=cardCodeStore.get(String(cardId))||""; const codeBlock=$('#codeBlock'); if(codeBlock) codeBlock.textContent=code; }
+    function renderModalPreviewTab(cardId){
+      const code=cardCodeStore.get(String(cardId))||""; const wrap=document.querySelector('[data-panel="preview"] .preview-frame-wrap'); if(!wrap) return;
+      wrap.innerHTML=''; const iframe=document.createElement('iframe'); iframe.className='w-full h-full';
+      iframe.setAttribute('sandbox','allow-scripts allow-forms allow-pointer-lock allow-same-origin');
+      iframe.srcdoc = code || '<!doctype html><html><body style="display:grid;place-items:center;height:100%;font:12px system-ui;color:#94a3b8">No code</body></html>';
+      wrap.appendChild(iframe);
+    }
+    function renderModalPreviewAndCode(cardId){ renderModalPreviewTab(cardId); renderModalCodeTab(cardId); }
+
+    // ===== API helpers =====
+    async function apiList(){
+      const res = await fetch('/html-templates/api/html-templates/', { headers: {'Accept':'application/json'} });
+      if(!res.ok) throw new Error('Failed to load');
+      return await res.json();
+    }
+    async function apiCreateJSON(payload){
+      const res = await fetch('/html-templates/api/html-templates/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF()},
+        body: JSON.stringify(payload)
+      });
+      if(!res.ok) throw new Error(await res.text());
+      return await res.json();
+    }
+    async function apiCreateMultipart(formData){
+      const res = await fetch('/html-templates/api/html-templates/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': CSRF()},
+        body: formData
+      });
+      if(!res.ok) throw new Error(await res.text());
+      return await res.json();
+    }
+
+    // ===== Add New Code submit (save to DB) - UPDATED =====
+    const newCodeForm = $('#newCodeForm');
+    newCodeForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const name=$('#ncName').value.trim()||'Untitled';
+      const section=$('#ncCategory').value.trim();
+      const tags = ($('#ncTags').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const status = $('#ncStatus').value; // Get status
+      const description=$('#ncDescription').value.trim();
+      const notes=$('#ncNotes').value.trim();
+      const instructions=$('#ncInstructions').value.trim();
+
+      const mode=document.querySelector('input[name="codeMode"]:checked').value;
+
+      try{
+        let created;
+        if(mode==='paste'){
+          const code = ($('#ncCode').value||'').trim();
+          if(!code){ alert('Please paste code.'); $('#ncCode').focus(); return; }
+          // Add status to payload
+          created = await apiCreateJSON({ name, section, tags, code, description, notes, instructions, status });
+        } else {
+          const codeFile = $('#ncCodeFile').files?.[0];
+          if(!codeFile){ alert('Please choose a code file.'); return; }
+          const fd = new FormData();
+          fd.append('name', name);
+          fd.append('section', section);
+          fd.append('tags', tags.join(','));
+          fd.append('status', status); // Add status
+          fd.append('description', description);
+          fd.append('notes', notes);
+          fd.append('instructions', instructions);
+          fd.append('code_file', codeFile);
+          // optional extra files
+          Array.from($('#ncFiles').files||[]).forEach(f=>fd.append('files', f));
+          created = await apiCreateMultipart(fd);
+        }
+
+        // Paint into the grid
+        const el = buildCardEl(created);
+        $('#cardsGrid').prepend(el);
+
+        // Reset
+        newCodeForm.reset();
+        setCodeMode('paste');
+        newCodeModal.classList.add('hidden'); document.body.classList.remove('overflow-hidden');
+      } catch(err){
+        alert('Error: ' + (err?.message || err));
+      }
+    });
+
+    // Delegated opener for ALL cards - UPDATED
+    document.addEventListener('click', async (e)=>{
+      const card=e.target.closest('[data-open-card]'); if(!card) return;
+      if(e.target.closest('button')) return; // ignore internal buttons
+
+      const id=card.dataset.cardId, name=card.dataset.title || card.querySelector('[data-card-title]')?.textContent?.trim() || 'Untitled';
+      const dateISO=card.dataset.date||'', section=card.dataset.section||'';
+      const status=card.dataset.status||defaultStatusKey; // Get status
+      const tags=(card.dataset.tags||'').split(',').map(s=>s.trim()).filter(Boolean);
+
+      // get fresh details (notes/instructions/files) from backend
+      try{
+        const res = await fetch(`/html-templates/api/html-templates/${id}/`, { headers: {'Accept':'application/json'} });
+        const details = res.ok ? await res.json() : {};
+        // code may be stale in cardCodeStore if updated elsewhere
+        if(details.code){ cardCodeStore.set(String(id), details.code); }
+        cardState.notes = details.notes || '';
+        cardState.instructions = details.instructions || '';
+        // Note: The status from the card dataset might be more current if just edited
+        // But if backend sends a status, let's use it
+        if(details.status) cardState.status = details.status;
+
+      }catch{ /* non-blocking */ }
+
+      // Update cardState
+      cardState.id=id; cardState.name=name; cardState.date=dateISO; cardState.section=section; cardState.tags=[...tags];
+      cardState.status = status; // Set status in state
+
+      // Populate modal
+      titleEl.textContent=name; 
+      dateEl.textContent=`Added on: ${prettyDate(dateISO)}`;
+      modalStatusPill.innerHTML = getStatusPillHtml(status); // Set modal header pill
+      
+      $('#ovName').value=name; 
+      $('#ovDate').value=(dateISO||''); 
+      $('#ovSection').value=section;
+      $('#ovStatus').value = status; // Set overview status dropdown
+      $('#ovNotes').value = cardState.notes || '';
+      renderTagChips($('#ovTagsWrap'), cardState.tags, true); $('#ovTagInput').value=''; setOverviewEditMode(false);
+
+      dialog.dataset.cardId=id||'';
+      modal.classList.remove('hidden');
+      requestAnimationFrame(()=>{ dialog.classList.remove('translate-y-2','opacity-0'); document.body.classList.add('overflow-hidden'); });
+
+      // ensure Preview + Code tabs show this card's code
+      renderModalPreviewAndCode(cardState.id);
+      setActiveTab('overview');
+
+      // Files list (load)
+      loadFilesList(id);
+    });
+
+    // Files UI (list only; upload via modal button)
+    function renderFilesTable(files){
+      const body=$('#filesTableBody'); body.innerHTML='';
+      if(!files?.length){
+        body.innerHTML=`<tr><td colspan="2" class="px-4 py-6 text-center text-sm text-slate-500">No files yet.</td></tr>`;
+        return;
+      }
+      files.forEach(f=>{
+        const tr=document.createElement('tr'); tr.className='border-t border-slate-200';
+        tr.innerHTML=`<td class="px-4 py-2"><a class="text-indigo-600 hover:underline" href="${f.url}" target="_blank" rel="noopener">${f.name}</a></td>
+          <td class="px-4 py-2 text-slate-500 text-xs">—</td>`;
+        body.appendChild(tr);
+      });
+    }
+    function renderFilesIcons(files){
+      const wrap=$('#filesIconWrap'); wrap.innerHTML='';
+      if(!files?.length){ wrap.innerHTML=`<div class="col-span-full text-center text-sm text-slate-500 py-6">No files yet.</div>`; return; }
+      files.forEach(f=>{
+        const card=document.createElement('div'); card.className='rounded-xl border border-slate-200 p-3 bg-white flex items-center gap-3';
+        const ext = (f.name.split('.').pop()||'file').toUpperCase();
+        card.innerHTML=`<div class="h-10 w-10 rounded-lg bg-slate-100 grid place-items-center text-slate-500 text-xs">${ext}</div>
+          <div class="min-w-0"><a class="text-sm font-medium truncate text-indigo-600 hover:underline" href="${f.url}" target="_blank" rel="noopener">${f.name}</a></div>`;
+        wrap.appendChild(card);
+      });
+    }
+    function renderFiles(files){
+      if(!$('#filesIconWrap').classList.contains('hidden')) renderFilesIcons(files);
+      renderFilesTable(files);
+    }
+    async function loadFilesList(cardId){
+      const r = await fetch(`/html-templates/api/html-templates/${cardId}/`, { headers: {'Accept': 'application/json'}});
+      const data = r.ok ? await r.json() : {files:[]};
+      renderFiles(data.files || []);
+    }
+    $('#uploadBtn').addEventListener('click', ()=>$('#fileInput').click());
+    $('#fileInput').addEventListener('change', async (e)=>{
+      const files = Array.from(e.target.files||[]);
+      if(!files.length) return;
+      const id = dialog.dataset.cardId;
+      const fd = new FormData();
+      files.forEach(f=>fd.append('files', f));
+      const res = await fetch(`/html-templates/api/html-templates/${id}/files/`, { method:'POST', headers:{'X-CSRFToken': CSRF()}, body: fd });
+      if(res.ok){
+        await loadFilesList(id);
+      } else {
+        alert('Upload failed');
+      }
+      e.target.value='';
+    });
+    const tableBtn=$('#filesTableBtn'), iconBtn=$('#filesIconBtn');
+    tableBtn.addEventListener('click', ()=>{ tableBtn.dataset.active='true'; iconBtn.dataset.active='false'; tableBtn.classList.add('bg-slate-900','text-white'); iconBtn.classList.remove('bg-slate-900','text-white'); $('#filesTableWrap').classList.remove('hidden'); $('#filesIconWrap').classList.add('hidden'); });
+    iconBtn.addEventListener('click', ()=>{ iconBtn.dataset.active='true'; tableBtn.dataset.active='false'; iconBtn.classList.add('bg-slate-900','text-white'); tableBtn.classList.remove('bg-slate-900','text-white'); $('#filesIconWrap').classList.remove('hidden'); $('#filesTableWrap').classList.add('hidden'); });
+
+    // ===== Initial load (read from DB) =====
+    async function boot(){
+      try{
+        const data = await apiList();
+        const grid = $('#cardsGrid');
+        grid.innerHTML = '';
+        (data.results || []).forEach(item => {
+          const el = buildCardEl(item);
+          grid.appendChild(el);
+        });
+      }catch(err){
+        console.error(err);
+        alert('Failed to load components.');
+      }
+    }
+    boot();
+  </script>
+  <script>
+    // ----- Preview: fullscreen helpers -----
+    const previewOverlay = document.getElementById('previewFullscreen');
+    const previewOverlayIframe = document.getElementById('previewFullscreenFrame');
+    const previewExpandBtn = document.getElementById('previewExpandBtn');
+
+    function openPreviewFullscreen(cardId) {
+      // pull current code for this card
+      const code = cardCodeStore.get(String(cardId)) || '';
+      previewOverlayIframe.srcdoc = code || '<!doctype html><html><body style="display:grid;place-items:center;height:100%;font:14px system-ui;color:#e5e7eb;background:#0f172a">No code</body></html>';
+      previewOverlay.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    }
+
+    function closePreviewFullscreen() {
+      previewOverlay.classList.add('hidden');
+      // clear the iframe to free resources (and avoid keeping script state)
+      previewOverlayIframe.removeAttribute('srcdoc');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    // open via button
+    if (previewExpandBtn) {
+      previewExpandBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!cardState.id) return;
+        openPreviewFullscreen(cardState.id);
+      });
+    }
+
+    // close by clicking backdrop or the "Close" button
+    previewOverlay.addEventListener('click', (e) => {
+      if (e.target.closest('[data-close-preview]')) {
+        closePreviewFullscreen();
+      }
+    });
+
+    // close with Esc
+    document.addEventListener('keydown', (e) => {
+      if (!previewOverlay.classList.contains('hidden') && e.key === 'Escape') {
+        closePreviewFullscreen();
+      }
+    });
+  </script>
+</body>
+</html>
