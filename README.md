@@ -1,7 +1,7 @@
 <p align="center">
-  <a href="https://github.com/stephen-costa20/html-template-library"><img src="https://img.shields.io/badge/View%20on%20GitHub-%20-blue?style=for-the-badge" alt="View on GitHub"></a>
-  <a href="https://github.com/stephen-costa20/html-template-library/blob/main/LICENSE"><img src="https://img.shields.io/github/license/stephen-costa20/Templatron?style=for-the-badge" alt="License"></a>
-  <a href="https://github.com/stephen-costa20/html-template-library/commits/main"><img src="https://img.shields.io/github/last-commit/stephen-costa20/Templatron?style=for-the-badge" alt="Last Commit"></a>
+  <a href="https://github.com/stephen-costa20/Templatron"><img src="https://img.shields.io/badge/View%20on%20GitHub-%20-blue?style=for-the-badge" alt="View on GitHub"></a>
+  <a href="https://github.com/stephen-costa20/Templatron/blob/main/LICENSE"><img src="https://img.shields.io/github/license/stephen-costa20/Templatron?style=for-the-badge" alt="License"></a>
+  <a href="https://github.com/stephen-costa20/Templatron/commits/main"><img src="https://img.shields.io/github/last-commit/stephen-costa20/Templatron?style=for-the-badge" alt="Last Commit"></a>
   <img src="https://img.shields.io/badge/Built%20With-Django%2FAPI-green?style=for-the-badge" alt="Built with Django/API">
 </p>
 
